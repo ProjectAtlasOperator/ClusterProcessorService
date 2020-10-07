@@ -1,9 +1,9 @@
 apiVersion: v1
 kind: Pod
 metadata:
-  name: "{{ include "cluster_processor_service.fullname" . }}-test-connection"
+  name: "{{ include "cluster-processor-service.fullname" . }}-test-connection"
   labels:
-    {{- include "cluster_processor_service.labels" . | nindent 4 }}
+    {{- include "cluster-processor-service.labels" . | nindent 4 }}
   annotations:
     "helm.sh/hook": test-success
 spec:
@@ -11,5 +11,5 @@ spec:
     - name: wget
       image: busybox
       command: ['wget']
-      args: ['{{ include "cluster_processor_service.fullname" . }}:{{ .Values.service.port }}']
+      args: ['{{ include "cluster-processor-service.fullname" . }}:{{ .Values.service.port }}']
   restartPolicy: Never
