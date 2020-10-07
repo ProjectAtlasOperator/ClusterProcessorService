@@ -1,24 +1,24 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "cluster_processor_service.fullname" . }}
+  name: {{ include "cluster-processor-service.fullname" . }}
   labels:
-    {{- include "cluster_processor_service.labels" . | nindent 4 }}
+    {{- include "cluster-processor-service.labels" . | nindent 4 }}
 spec:
   replicas: {{ .Values.replicaCount }}
   selector:
     matchLabels:
-      {{- include "cluster_processor_service.selectorLabels" . | nindent 6 }}
+      {{- include "cluster-processor-service.selectorLabels" . | nindent 6 }}
   template:
     metadata:
       labels:
-        {{- include "cluster_processor_service.selectorLabels" . | nindent 8 }}
+        {{- include "cluster-processor-service.selectorLabels" . | nindent 8 }}
     spec:
     {{- with .Values.imagePullSecrets }}
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
     {{- end }}
-      serviceAccountName: {{ include "cluster_processor_service.serviceAccountName" . }}
+      serviceAccountName: {{ include "cluster-processor-service.serviceAccountName" . }}
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
       containers:

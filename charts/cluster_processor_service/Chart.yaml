@@ -1,6 +1,6 @@
 apiVersion: v2
-name: cluster_processor_service
-description: A Helm chart for cluster_processor_service
+name: cluster-processor-service
+description: A Helm chart for cluster-processor-service
 
 # A chart can be either an 'application' or a 'library' chart.
 #
