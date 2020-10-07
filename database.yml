@@ -2,8 +2,8 @@
 development:
   dialect: postgres
   database: cluster_processor_service_development
-  user: postgres
-  password: postgres
+  user: postgress
+  password: postgress
   host: 127.0.0.1
   pool: 5
 
