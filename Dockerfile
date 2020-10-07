@@ -8,10 +8,6 @@ ENV GOPROXY http://proxy.golang.org
 RUN mkdir -p /src/cluster_processor_service
 WORKDIR /src/cluster_processor_service
 
-# this will cache the npm install step, unless package.json changes
-ADD package.json .
-ADD yarn.lock .
-RUN yarn install --no-progress
 # Copy the Go Modules manifests
 COPY go.mod go.mod
 COPY go.sum go.sum
