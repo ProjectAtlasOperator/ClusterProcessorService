@@ -22,9 +22,8 @@ RUN go mod download
 ADD . .
 RUN buffalo build --static -o /bin/app
 
-FROM alpine
-RUN apk add --no-cache bash
-RUN apk add --no-cache ca-certificates
+FROM registry.access.redhat.com/ubi8/ubi-minimal:8.2
+RUN microdnf install -y ca-certificates
 
 WORKDIR /bin/
 
@@ -37,7 +36,7 @@ COPY --from=builder /bin/app .
 ENV ADDR=0.0.0.0
 
 EXPOSE 3000
-
+USER 1001
 # Uncomment to run the migrations before running the binary:
 # CMD /bin/app migrate; /bin/app
 CMD exec /bin/app
