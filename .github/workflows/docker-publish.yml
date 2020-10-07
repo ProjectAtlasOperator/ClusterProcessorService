@@ -15,7 +15,7 @@ on:
 
 env:
   # TODO: Change variable to your image's name.
-  IMAGE_NAME: project_atlas/cluster_processor_service
+  IMAGE_NAME: project_atlas_cluster_processor_service
 
 jobs:
   # Push image to GitHub Packages.
@@ -30,11 +30,11 @@ jobs:
       - name: Build image
         run: docker build . --file Dockerfile --tag $IMAGE_NAME
 
-      - name: Log into GitHub Container Registry
+      - name: Log into DockerHub Container Registry
       # TODO: Create a PAT with `read:packages` and `write:packages` scopes and save it as an Actions secret `CR_PAT`
         run: echo "${{ secrets.DOCKERHUB_PASSWORD }}" | docker login -u marianferenc --password-stdin
 
-      - name: Push image to GitHub Container Registry
+      - name: Push image to DockerHub Container Registry
         run: |
           IMAGE_ID=marianferenc/$IMAGE_NAME
 
