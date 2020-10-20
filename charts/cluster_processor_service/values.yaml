@@ -6,7 +6,7 @@ replicaCount: 1
 
 image:
   repository: marianferenc/project_atlas_cluster_processor_service:latest
-  pullPolicy: Always
+  pullPolicy: Never
 
 imagePullSecrets: []
 nameOverride: ""
