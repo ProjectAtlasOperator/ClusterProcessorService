@@ -1,9 +1,8 @@
 package main
 
 import (
-	"log"
-
 	"cluster_processor_service/actions"
+	"log"
 )
 
 // main is the starting point for your Buffalo application.
