@@ -20,7 +20,7 @@ If you point your browser to [http://127.0.0.1:3000](http://127.0.0.1:3000) you 
 	
 ## Kubernetes deployment
 
-	helm install cluster-processor-service charts/cluster_processor_service
+	helm upgrade --install cluster-processor-service charts/cluster_processor_service
 	
 ## What Next?
 
