@@ -16,12 +16,40 @@ If you point your browser to [http://127.0.0.1:3000](http://127.0.0.1:3000) you 
 
 ## Docker build
 
-        docker build . --file Dockerfile --tag marianferenc/project_atlas_cluster_processor_service:latest
+    docker build . --file Dockerfile --tag marianferenc/project_atlas_cluster_processor_service:latest
 	
 ## Kubernetes deployment
 
-	helm install cluster-processor-service charts/cluster_processor_service
+	helm upgrade --install cluster-processor-service charts/cluster_processor_service
 	
+## Kubernetes undeployment
+
+    helm del cluster-processor-service
+    
+## Forward deployed application to localhost
+
+    kubectl port-forward svc/cluster-processor-service 3000:3000
+    
+## Check logs on kubernetes
+First get name of pod instance via command:
+
+    kubectl get pods
+
+Sample output:
+
+```
+NAME                                        READY   STATUS              RESTARTS   AGE
+cluster-processor-service-7dd75b65c-hzjvv   1/1     Running               0      4m21s
+```
+
+Now you can get logs from this pod via command:
+
+    kubectl logs -f cluster-processor-service-7dd75b65c-hzjvv
+    
+BONUS (one liner for people with linux terminal):
+ 
+    kubectl get pods -o custom-columns=POD:.metadata.name --no-headers | grep cluster-processor-service | xargs kubectl logs -f
+
 ## What Next?
 
 We recommend you heading over to [http://gobuffalo.io](http://gobuffalo.io) and reviewing all of the great documentation there.
