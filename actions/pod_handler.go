@@ -33,6 +33,8 @@ func PodInfoHander(c buffalo.Context) error {
 			panic(err.Error())
 		}
 		fmt.Printf("There are %d pods in the cluster\n", len(pods.Items))
+		//display data
+		c.Set("pods", pods)
 
 		// - And/or cast to StatusError and use its properties like e.g. ErrStatus.Message
 		_, err = clientset.CoreV1().Pods("default").Get(context.TODO(), "example-xxxxx", metav1.GetOptions{})
@@ -46,9 +48,8 @@ func PodInfoHander(c buffalo.Context) error {
 			fmt.Printf("Found example-xxxxx pod in default namespace\n")
 		}
 		time.Sleep(10 * time.Second)
+		break
 	}
 
-	return c.Render(http.StatusOK, r.String(http.StatusText(200)))
+	return c.Render(http.StatusOK, r.HTML("pod-handler.html"))
 }
-
-
