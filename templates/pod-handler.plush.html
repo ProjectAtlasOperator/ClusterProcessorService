@@ -7,7 +7,7 @@
 <body>
 <table class="table table-striped">
     <thead>
-    <h1>Pods Information</h1>
+    <h1>Pod Information</h1>
     <tr text-align="left">
         <th class="centered">NAME</th>
         <th class="centered">NAMESPACE</th>
@@ -39,10 +39,55 @@
         <td class="centered">
             <%= pod.Status.StartTime %>
         </td>
+
     </tr>
     <% } %>
 
+    <tr>
+        <th>IMAGE</th>
+        <th>IMAGE NAME</th>
+    </tr>
+    <tr>
+        <td class="centered"> <%= image %></td>
+        <td class="centered"> <%= imageName %></td>
+    </tr>
+
+    <tr>
+        <th class="centered">CPU</th>
+        <th class="centered">MEMORY</th>
+    </tr>
+    <tr>
+        <td class="centered"><%= CPU %></td>
+        <td class="centered"><%= MEMORY %></td>
+    </tr>
+
+    <tr>
+        <th class="centered">CONFIGMAP NAME</th>
+    </tr>
+    <tr>
+        <td class="centered"><%= cfm %></td>
+    </tr>
+
+    <tr>
+        <th class="centered">VOLUME</th>
+        <th class="centered">MOUTH PATH</th>
+    </tr>
+    <tr>
+        <td class="centered"><%= volumeName %></td>
+        <td class="centered"><%= mountPath %></td>
+    </tr>
+
+    <tr>
+        <th class="centered">NODE NAME</th>
+        <th class="centered">NODE MEMORY</th>
+    </tr>
+    <tr>
+        <td class="centered"><%= nodeName %></td>
+        <td class="centered"><%= nodeMemory %></td>
+    </tr>
+
     </tbody>
 </table>
+
 </body>
 </html>
