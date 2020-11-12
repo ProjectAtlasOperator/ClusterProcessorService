@@ -50,6 +50,29 @@ BONUS (one liner for people with linux terminal):
  
     kubectl get pods -o custom-columns=POD:.metadata.name --no-headers | grep cluster-processor-service | xargs kubectl logs -f
 
+##Start Metrics Server
+
+Download metrics server from GitHub
+
+    kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
+
+Change policies of metrics server deployment
+    
+    kubectl -n kube-system edit deployments.apps metrics-server
+
+Add this under spec: containers: - args:
+
+            command:
+            - /metrics-server
+            - --kubelet-insecure-tls
+            - --kubelet-preferred-address-types=InternalIP
+            
+Use command kubectl top pods or nodes to access CPU and MEMORY usage
+
+    kubectl top pods
+    NAME                                         CPU(cores)   MEMORY(bytes)
+    cluster-processor-service-7944949d67-h8k6w   1m           14Mi
+
 ## What Next?
 
 We recommend you heading over to [http://gobuffalo.io](http://gobuffalo.io) and reviewing all of the great documentation there.
