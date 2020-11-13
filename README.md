@@ -73,6 +73,12 @@ Use command kubectl top pods or nodes to access CPU and MEMORY usage
     NAME                                         CPU(cores)   MEMORY(bytes)
     cluster-processor-service-7944949d67-h8k6w   1m           14Mi
 
+## Start configmap
+
+Enter dir yaml_files and start configmap with
+    
+    kubectl apply -f configmap.yaml
+
 ## What Next?
 
 We recommend you heading over to [http://gobuffalo.io](http://gobuffalo.io) and reviewing all of the great documentation there.

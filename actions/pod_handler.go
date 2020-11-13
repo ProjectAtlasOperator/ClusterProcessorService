@@ -66,8 +66,8 @@ func PodInfoHander(c buffalo.Context) error {
 		for _, podMetric := range podsMetricList.Items {
 			podContainer := podMetric.Containers
 			for _, container := range podContainer {
-				CPU := container.Usage.Cpu()
-				MEMORY := container.Usage.Memory()
+				CPU := container.Usage.Cpu().AsDec()
+				MEMORY := container.Usage.Memory().AsDec()
 				c.Set("CPU", CPU)
 				c.Set("MEMORY", MEMORY)
 			}
@@ -75,6 +75,7 @@ func PodInfoHander(c buffalo.Context) error {
 
 		for _, configmap := range configMap.Items {
 			c.Set("cfm", configmap.Name)
+			c.Set("cfm_data", configmap.Data)
 		}
 
 		fmt.Printf("There are %d pods in the cluster\n", len(pods.Items))
