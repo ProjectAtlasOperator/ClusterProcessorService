@@ -75,7 +75,7 @@ Use command kubectl top pods or nodes to access CPU and MEMORY usage
 
 ## Start configmap
 
-Enter dir yaml_files and start configmap with
+Enter directory yaml_files and start configmap with
     
     kubectl apply -f configmap.yaml
 
