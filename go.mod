@@ -12,6 +12,7 @@ require (
 	github.com/gobuffalo/packr/v2 v2.8.0
 	github.com/gobuffalo/suite v2.8.2+incompatible
 	github.com/unrolled/secure v1.0.8
+	go.mongodb.org/mongo-driver v1.4.3
 	k8s.io/api v0.19.3 // indirect
 	k8s.io/apimachinery v0.19.3
 	k8s.io/client-go v0.19.0

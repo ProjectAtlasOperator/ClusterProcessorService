@@ -9,7 +9,6 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	metricsv "k8s.io/metrics/pkg/client/clientset/versioned"
-	//"k8s.io/client-go/metadata"
 	"net/http"
 )
 
@@ -20,7 +19,6 @@ func PodInfoHander(c buffalo.Context) error {
 	if err != nil {
 		panic(err.Error())
 	}
-	// creates the clientset
 	clientset, err := kubernetes.NewForConfig(config)
 	if err != nil {
 		panic(err.Error())
@@ -32,15 +30,15 @@ func PodInfoHander(c buffalo.Context) error {
 	for {
 		// get pods in all the namespaces by omitting namespace
 		// Or specify namespace to get pods in particular namespace
-		pods, err := clientset.CoreV1().Pods("default").List(context.TODO(), metav1.ListOptions{})
+		pods, err := clientset.CoreV1().Pods("project-atlas-system").List(context.TODO(), metav1.ListOptions{})
 		if err != nil {
 			panic(err.Error())
 		}
-		configMap, err := clientset.CoreV1().ConfigMaps("default").List(context.TODO(), metav1.ListOptions{})
+		configMap, err := clientset.CoreV1().ConfigMaps("project-atlas-system").List(context.TODO(), metav1.ListOptions{})
 		if err != nil {
 			panic(err.Error())
 		}
-		podsMetricList, err := clientsetMetrics.MetricsV1beta1().PodMetricses("default").List(context.TODO(), metav1.ListOptions{})
+		podsMetricList, err := clientsetMetrics.MetricsV1beta1().PodMetricses("project-atlas-system").List(context.TODO(), metav1.ListOptions{})
 		if err != nil {
 			panic(err.Error())
 		}
@@ -86,7 +84,7 @@ func PodInfoHander(c buffalo.Context) error {
 		//return c.Render(http.StatusOK, r.HTML("index.html"))
 
 		// - And/or cast to StatusError and use its properties like e.g. ErrStatus.Message
-		_, err = clientset.CoreV1().Pods("default").Get(context.TODO(), "example-xxxxx", metav1.GetOptions{})
+		_, err = clientset.CoreV1().Pods("project-atlas-system").Get(context.TODO(), "example-xxxxx", metav1.GetOptions{})
 		if errors.IsNotFound(err) {
 			fmt.Printf("Pod example-xxxxx not found in default namespace\n")
 		} else if statusError, isStatus := err.(*errors.StatusError); isStatus {
