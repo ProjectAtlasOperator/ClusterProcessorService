@@ -4,13 +4,27 @@ import (
 	"context"
 	"fmt"
 	"github.com/gobuffalo/buffalo"
+	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	metricsv "k8s.io/metrics/pkg/client/clientset/versioned"
+	"log"
 	"net/http"
+	"time"
 )
+
+type Pod struct {
+	ID        primitive.ObjectID `json:"_id,omitempty" bson:"_id,omitempty"`
+	Name      string             `json:"name,omitempty"`
+	Namespace string             `json:"namespace,omitempty"`
+	PodIP     string             `json:"podIp,omitempty"`
+	HostIP    string             `json:"hostIp,omitempty"`
+	StartTime time.Time          `json:"startTime,omitempty"`
+}
 
 // PodInfoHander is a default handler to serve up
 // a home page.
@@ -27,6 +41,18 @@ func PodInfoHander(c buffalo.Context) error {
 	if err != nil {
 		panic(err.Error())
 	}
+
+	client, err := mongo.NewClient(options.Client().ApplyURI("mongodb://username:password@10.97.103.216:27017"))
+	if err != nil {
+		log.Fatal(err)
+	}
+	ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
+	//Connection to MDB
+	err = client.Connect(ctx)
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	for {
 		// get pods in all the namespaces by omitting namespace
 		// Or specify namespace to get pods in particular namespace
@@ -48,7 +74,19 @@ func PodInfoHander(c buffalo.Context) error {
 			panic(err.Error())
 		}
 
+		p := &Pod{}
 		for _, pod := range pods.Items {
+			p.Name = pod.Name
+			p.Namespace = pod.Namespace
+			p.HostIP = pod.Status.HostIP
+			p.PodIP = pod.Status.PodIP
+			p.StartTime = pod.Status.StartTime.Time
+
+			collection := client.Database("local").Collection("pod")
+			_, err = collection.InsertOne(ctx, p)
+			if err != nil {
+				log.Fatal(err)
+			}
 			podStatus := pod.Spec.Containers
 			for _, spec := range podStatus {
 				c.Set("image", spec.Image)
@@ -82,6 +120,9 @@ func PodInfoHander(c buffalo.Context) error {
 		c.Set("nodeMemory", nodes.Items[0].Usage.Memory())
 
 		//return c.Render(http.StatusOK, r.HTML("index.html"))
+		if err := c.Bind(p); err != nil {
+			return err
+		}
 
 		// - And/or cast to StatusError and use its properties like e.g. ErrStatus.Message
 		_, err = clientset.CoreV1().Pods("project-atlas-system").Get(context.TODO(), "example-xxxxx", metav1.GetOptions{})
@@ -96,6 +137,7 @@ func PodInfoHander(c buffalo.Context) error {
 		}
 		break
 		//time.Sleep(2 * time.Second)
+
 	}
 
 	return c.Render(http.StatusOK, r.HTML("pod-handler.html"))
