@@ -20,15 +20,15 @@ If you point your browser to [http://127.0.0.1:3000](http://127.0.0.1:3000) you 
 	
 ## Kubernetes deployment
 
-	helm upgrade --install cluster-processor-service charts/cluster_processor_service
+	helm upgrade --install cluster-processor-service charts/cluster_processor_service --namespace project-atlas-system
 	
 ## Kubernetes undeployment
 
-    helm del cluster-processor-service
+    helm del cluster-processor-service --namespace project-atlas-system
     
 ## Forward deployed application to localhost
 
-    kubectl port-forward svc/cluster-processor-service 3000:3000
+    kubectl port-forward svc/cluster-processor-service 3000:3000 --namespace project-atlas-system
     
 ## Check logs on kubernetes
 First get name of pod instance via command:
@@ -77,7 +77,13 @@ Use command kubectl top pods or nodes to access CPU and MEMORY usage
 
 Enter directory yaml_files and start configmap with
     
-    kubectl apply -f configmap.yaml
+    kubectl apply -f configmap.yaml --namespace project-atlas-system
+    
+## Start configmap
+
+Create namespace
+    
+    kubectl create namespace project-atlas-system   
 
 ## What Next?
 
