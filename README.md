@@ -33,7 +33,7 @@ If you point your browser to [http://127.0.0.1:3000](http://127.0.0.1:3000) you 
 ## Check logs on kubernetes
 First get name of pod instance via command:
 
-    kubectl get pods
+    kubectl get pods --namespace project-atlas-system
 
 Sample output:
 
