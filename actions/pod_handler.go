@@ -113,11 +113,7 @@ func PodInfoHander(c buffalo.Context) error {
 			p.PodIP = pod.Status.PodIP
 			p.StartTime = pod.Status.StartTime.Time
 
-			collection := client.Database("project-atlas").Collection("pod")
-			_, err := collection.InsertOne(ctx, p)
-			if err != nil {
-				log.Fatal(err)
-			}
+			addPodToDatabase(&ctx, p, client)
 
 			podStatus := pod.Spec.Containers
 			for _, spec := range podStatus {
@@ -131,11 +127,7 @@ func PodInfoHander(c buffalo.Context) error {
 					c.Set("volumeName", volume.Name)
 				}
 			}
-			collection = client.Database("project-atlas").Collection("volume")
-			_, err = collection.InsertOne(ctx, v)
-			if err != nil {
-				log.Fatal(err)
-			}
+			addVolumeToDatabase(&ctx, v, client)
 		}
 		cpumem := &CpuMem{}
 		for _, podMetric := range podsMetricList.Items {
@@ -154,11 +146,8 @@ func PodInfoHander(c buffalo.Context) error {
 				c.Set("CPU", CPU)
 				c.Set("MEMORY", MEMORY)
 			}
-			collection := client.Database("project-atlas").Collection("cpumem")
-			_, err := collection.InsertOne(ctx, cpumem)
-			if err != nil {
-				log.Fatal(err)
-			}
+			addCpuMemToDatabase(&ctx, cpumem, client)
+
 		}
 
 		confMap := &ConfigMap{}
@@ -166,12 +155,7 @@ func PodInfoHander(c buffalo.Context) error {
 			confMap.Name = configmap.Name
 			c.Set("cfm", configmap.Name)
 			c.Set("cfm_data", configmap.Data)
-
-			collection := client.Database("project-atlas").Collection("configMap")
-			_, err = collection.InsertOne(ctx, confMap)
-			if err != nil {
-				log.Fatal(err)
-			}
+			addConfMapToDatabase(&ctx, confMap, client)
 
 		}
 
@@ -184,12 +168,7 @@ func PodInfoHander(c buffalo.Context) error {
 		c.Set("pods", pods)
 		c.Set("nodeName", nodes.Items[0].Name)
 		c.Set("nodeMemory", nodes.Items[0].Usage.Memory())
-
-		collection := client.Database("project-atlas").Collection("node")
-		_, err = collection.InsertOne(ctx, n)
-		if err != nil {
-			log.Fatal(err)
-		}
+		addNodeToDatabase(&ctx, n, client)
 
 		//return c.Render(http.StatusOK, r.HTML("index.html"))
 		if err := c.Bind(p); err != nil {
@@ -213,6 +192,42 @@ func PodInfoHander(c buffalo.Context) error {
 	}
 
 	return c.Render(http.StatusOK, r.HTML("pod-handler.html"))
+}
+
+func addNodeToDatabase(ctx *context.Context, n *Node, client *mongo.Client) {
+	collection := client.Database("project-atlas").Collection("node")
+	_, err := collection.InsertOne(*ctx, n)
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+func addVolumeToDatabase(ctx *context.Context, v *Volume, client *mongo.Client) {
+	collection := client.Database("project-atlas").Collection("volume")
+	_, err := collection.InsertOne(*ctx, v)
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+func addCpuMemToDatabase(ctx *context.Context, cpumem *CpuMem, client *mongo.Client) {
+	collection := client.Database("project-atlas").Collection("cpu-memory")
+	_, err := collection.InsertOne(*ctx, cpumem)
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+func addPodToDatabase(ctx *context.Context, p *Pod, client *mongo.Client) {
+	collection := client.Database("project-atlas").Collection("pod")
+	_, err := collection.InsertOne(*ctx, p)
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+func addConfMapToDatabase(ctx *context.Context, confMap *ConfigMap, client *mongo.Client) {
+	collection := client.Database("project-atlas").Collection("config-map")
+	_, err := collection.InsertOne(*ctx, confMap)
+	if err != nil {
+		log.Fatal(err)
+	}
 }
 
 func getPodInfo(pods *v1.PodList, p *Pod, ctx *context.Context, c buffalo.Context) {
