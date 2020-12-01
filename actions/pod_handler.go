@@ -6,6 +6,7 @@ import (
 	"github.com/gobuffalo/buffalo"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/json"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	metricsv "k8s.io/metrics/pkg/client/clientset/versioned"
@@ -13,40 +14,40 @@ import (
 )
 
 type PodInformation struct {
-	podName   string
-	namespace string
-	hostIP    string
-	podIP     string
-	startTime string
+	PodName   string `json:"podName"`
+	Namespace string `json:"namespace"`
+	HostIP    string `json:"hostIp"`
+	PodIP     string `json:"podIp"`
+	StartTime string `json:"startTime"`
 
 	volume struct {
-		PodName     string
-		VolumeName  string
-		VolumeMount string
+		PodName     string `json:"podName"`
+		VolumeName  string `json:"volumeName"`
+		VolumeMount string `json:"volumeMount"`
 	}
 	pod struct {
-		Name      string
-		Namespace string
-		PodIP     string
-		HostIP    string
-		StartTime string
+		Name      string `json:"name"`
+		Namespace string `json:"nameSpace"`
+		PodIP     string `json:"podIp"`
+		HostIP    string `json:"hostIp"`
+		StartTime string `json:"startTime"`
 	}
 	cpuMem struct {
-		PodName     string
-		CPUUsage    string
-		MemoryUsage string
+		PodName     string `json:"podName"`
+		CPUUsage    string `json:"cpuUsage"`
+		MemoryUsage string `json:"memoryUsage"`
 	}
 	image struct {
-		imageName  string
-		mountPath  string
-		volumeName string
+		ImageName  string `json:"imageName"`
+		MountPath  string `json:"mountPath"`
+		VolumeName string `json:"volumeName"`
 	}
 	configMap struct {
-		Name string
+		Name string `json:"name"`
 	}
 	node struct {
-		Name   string
-		Memory string
+		Name   string `json:"name"`
+		Memory string `json:"memory"`
 	}
 }
 
@@ -163,6 +164,15 @@ func PodInfoHander(c buffalo.Context) error {
 		break
 	}
 
+	fmt.Println(podInformation)
+
+	e, err := json.Marshal(podInformation)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	fmt.Println(e)
+
 	//return c.Render(http.StatusOK, r.HTML("pod-handler.html"))
-	return c.Render(http.StatusOK, r.JSON(podInformation))
+	return c.Render(http.StatusOK, r.JSON(e))
 }
