@@ -4,58 +4,53 @@ import (
 	"context"
 	"fmt"
 	"github.com/gobuffalo/buffalo"
-	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
-	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	metricsv "k8s.io/metrics/pkg/client/clientset/versioned"
-	"log"
 	"net/http"
-	"time"
 )
 
-type Pod struct {
-	ID        primitive.ObjectID `json:"_id,omitempty" bson:"_id,omitempty"`
-	Name      string             `json:"name,omitempty"`
-	Namespace string             `json:"namespace,omitempty"`
-	PodIP     string             `json:"podIp,omitempty"`
-	HostIP    string             `json:"hostIp,omitempty"`
-	StartTime time.Time          `json:"startTime,omitempty"`
-	//cpu *inf.Dec        `json:"cpu,omitempty"`
-	//memory *inf.Dec          `json:"memory,omitempty"`
-}
-type Node struct {
-	ID     primitive.ObjectID `json:"_id,omitempty" bson:"_id,omitempty"`
-	Name   string             `json:"name,omitempty"`
-	Memory string             `json:"memory,omitempty"`
-	//cpu *inf.Dec        `json:"cpu,omitempty"`
-}
-type ConfigMap struct {
-	ID   primitive.ObjectID `json:"_id,omitempty" bson:"_id,omitempty"`
-	Name string             `json:"name,omitempty"`
-	//cpu *inf.Dec        `json:"cpu,omitempty"`
-}
-type Volume struct {
-	ID          primitive.ObjectID `json:"_id,omitempty" bson:"_id,omitempty"`
-	PodName     string             `json:"podname,omitempty"`
-	VolumeName  string             `json:"volumename,omitempty"`
-	VolumeMount string             `json:"volumemount,omitempty"`
-	//cpu *inf.Dec        `json:"cpu,omitempty"`
-}
-type CpuMem struct {
-	ID          primitive.ObjectID `json:"_id,omitempty" bson:"_id,omitempty"`
-	PodName     string             `json:"podname,omitempty"`
-	CPUUsage    string             `json:"cpuusage,omitempty"`
-	MemoryUsage string             `json:"memoryusage,omitempty"`
-	//cpu *inf.Dec        `json:"cpu,omitempty"`
+type PodInformation struct {
+	podName   string
+	namespace string
+	hostIP    string
+	podIP     string
+	startTime string
+
+	volume struct {
+		PodName     string
+		VolumeName  string
+		VolumeMount string
+	}
+	pod struct {
+		Name      string
+		Namespace string
+		PodIP     string
+		HostIP    string
+		StartTime string
+	}
+	cpuMem struct {
+		PodName     string
+		CPUUsage    string
+		MemoryUsage string
+	}
+	image struct {
+		imageName  string
+		mountPath  string
+		volumeName string
+	}
+	configMap struct {
+		Name string
+	}
+	node struct {
+		Name   string
+		Memory string
+	}
 }
 
-// PodInfoHander is a default handler to serve up
-// a home page.
+// PodInfoHander is a default handler to serve up a home page.
 func PodInfoHander(c buffalo.Context) error {
 	config, err := rest.InClusterConfig()
 	if err != nil {
@@ -70,16 +65,7 @@ func PodInfoHander(c buffalo.Context) error {
 		panic(err.Error())
 	}
 
-	client, err := mongo.NewClient(options.Client().ApplyURI("mongodb://username:password@10.97.103.216:27017"))
-	if err != nil {
-		log.Fatal(err)
-	}
-	ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
-	//Connection to MDB
-	err = client.Connect(ctx)
-	if err != nil {
-		log.Fatal(err)
-	}
+	podInformation := &PodInformation{}
 
 	for {
 		// get pods in all the namespaces by omitting namespace
@@ -102,18 +88,14 @@ func PodInfoHander(c buffalo.Context) error {
 			panic(err.Error())
 		}
 
-		p := &Pod{}
-		v := &Volume{}
 		//getPodInfo(pods, p, &ctx, &c)
 		for _, pod := range pods.Items {
-			v.PodName = pod.Name
-			p.Name = pod.Name
-			p.Namespace = pod.Namespace
-			p.HostIP = pod.Status.HostIP
-			p.PodIP = pod.Status.PodIP
-			p.StartTime = pod.Status.StartTime.Time
-
-			addPodToDatabase(&ctx, p, client)
+			podInformation.volume.PodName = pod.Name
+			podInformation.pod.Name = pod.Name
+			podInformation.pod.Namespace = pod.Namespace
+			podInformation.pod.HostIP = pod.Status.HostIP
+			podInformation.pod.PodIP = pod.Status.PodIP
+			podInformation.pod.StartTime = pod.Status.StartTime.Time.String()
 
 			podStatus := pod.Spec.Containers
 			for _, spec := range podStatus {
@@ -121,57 +103,49 @@ func PodInfoHander(c buffalo.Context) error {
 				c.Set("imageName", spec.Name)
 				volume := spec.VolumeMounts
 				for _, volume := range volume {
-					v.VolumeName = volume.Name
-					v.VolumeMount = volume.MountPath
+					podInformation.volume.VolumeName = volume.Name
+					podInformation.volume.VolumeMount = volume.MountPath
 					c.Set("mountPath", volume.MountPath)
 					c.Set("volumeName", volume.Name)
 				}
 			}
-			addVolumeToDatabase(&ctx, v, client)
 		}
-		cpumem := &CpuMem{}
 		for _, podMetric := range podsMetricList.Items {
 			podContainer := podMetric.Containers
 			for _, container := range podContainer {
-				cpumem.PodName = container.Name
-				cpumem.CPUUsage = container.Usage.Cpu().String()
-				cpumem.MemoryUsage = container.Usage.Memory().String()
+				podInformation.cpuMem.PodName = container.Name
+				podInformation.cpuMem.CPUUsage = container.Usage.Cpu().String()
+				podInformation.cpuMem.MemoryUsage = container.Usage.Memory().String()
 
 				NAME := container.Name
 				CPU := container.Usage.Cpu().AsDec()
 				MEMORY := container.Usage.Memory()
-				//p.cpu = CPU
-				//p.memory = MEMORY
 				c.Set("NAME", NAME)
 				c.Set("CPU", CPU)
 				c.Set("MEMORY", MEMORY)
 			}
-			addCpuMemToDatabase(&ctx, cpumem, client)
-
 		}
 
-		confMap := &ConfigMap{}
 		for _, configmap := range configMap.Items {
-			confMap.Name = configmap.Name
+			podInformation.configMap.Name = configmap.Name
 			c.Set("cfm", configmap.Name)
 			c.Set("cfm_data", configmap.Data)
-			addConfMapToDatabase(&ctx, confMap, client)
-
 		}
 
-		n := &Node{}
 		for _, node := range nodes.Items {
-			n.Name = node.Name
-			n.Memory = node.Usage.Memory().String()
+			podInformation.node.Name = node.Name
+			podInformation.node.Memory = node.Usage.Memory().String()
 		}
 		fmt.Printf("There are %d pods in the cluster\n", len(pods.Items))
 		c.Set("pods", pods)
 		c.Set("nodeName", nodes.Items[0].Name)
 		c.Set("nodeMemory", nodes.Items[0].Usage.Memory())
-		addNodeToDatabase(&ctx, n, client)
 
 		//return c.Render(http.StatusOK, r.HTML("index.html"))
-		if err := c.Bind(p); err != nil {
+		//if err := c.Bind(p.pod); err != nil {
+		//	return err
+		//} // was
+		if err := c.Bind(podInformation.pod); err != nil {
 			return err
 		}
 
@@ -187,72 +161,8 @@ func PodInfoHander(c buffalo.Context) error {
 			fmt.Printf("Found example-xxxxx pod in default namespace\n")
 		}
 		break
-		//time.Sleep(2 * time.Second)
-
 	}
 
-	return c.Render(http.StatusOK, r.HTML("pod-handler.html"))
-}
-
-func addNodeToDatabase(ctx *context.Context, n *Node, client *mongo.Client) {
-	collection := client.Database("project-atlas").Collection("node")
-	_, err := collection.InsertOne(*ctx, n)
-	if err != nil {
-		log.Fatal(err)
-	}
-}
-func addVolumeToDatabase(ctx *context.Context, v *Volume, client *mongo.Client) {
-	collection := client.Database("project-atlas").Collection("volume")
-	_, err := collection.InsertOne(*ctx, v)
-	if err != nil {
-		log.Fatal(err)
-	}
-}
-func addCpuMemToDatabase(ctx *context.Context, cpumem *CpuMem, client *mongo.Client) {
-	collection := client.Database("project-atlas").Collection("cpu-memory")
-	_, err := collection.InsertOne(*ctx, cpumem)
-	if err != nil {
-		log.Fatal(err)
-	}
-}
-func addPodToDatabase(ctx *context.Context, p *Pod, client *mongo.Client) {
-	collection := client.Database("project-atlas").Collection("pod")
-	_, err := collection.InsertOne(*ctx, p)
-	if err != nil {
-		log.Fatal(err)
-	}
-}
-func addConfMapToDatabase(ctx *context.Context, confMap *ConfigMap, client *mongo.Client) {
-	collection := client.Database("project-atlas").Collection("config-map")
-	_, err := collection.InsertOne(*ctx, confMap)
-	if err != nil {
-		log.Fatal(err)
-	}
-}
-
-func getPodInfo(pods *v1.PodList, p *Pod, ctx *context.Context, c buffalo.Context) {
-	for _, pod := range pods.Items {
-		p.Name = pod.Name
-		p.Namespace = pod.Namespace
-		p.HostIP = pod.Status.HostIP
-		p.PodIP = pod.Status.PodIP
-		p.StartTime = pod.Status.StartTime.Time
-
-		collection := client.Database("project-atlas").Collection("pod")
-		_, err := collection.InsertOne(*ctx, p)
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		podStatus := pod.Spec.Containers
-		for _, spec := range podStatus {
-			c.Set("image", spec.Image)
-			c.Set("imageName", spec.Name)
-			volume := spec.VolumeMounts
-			for _, volume := range volume {
-				c.Set("mountPath", volume.MountPath)
-				c.Set("volumeName", volume.Name)
-			}
-		}
-	}
+	//return c.Render(http.StatusOK, r.HTML("pod-handler.html"))
+	return c.Render(http.StatusOK, r.JSON(podInformation))
 }

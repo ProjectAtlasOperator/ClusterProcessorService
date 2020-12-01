@@ -52,11 +52,7 @@ func App() *buffalo.App {
 
 		app.GET("/", HomeHandler)
 
-		app.GET("/podinfo", PodInfoHander)
-
-		app.POST("/person", PostFunc)
-
-		app.GET("/retrive_data", RetrieveData)
+		app.GET("/api/podInformation", PodInfoHander) // communication with api-service
 
 		app.ServeFiles("/", assetsBox) // serve files from the public directory
 	}
