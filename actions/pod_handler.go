@@ -31,6 +31,7 @@ type PodInformation struct {
 		PodIP     string `json:"podIp"`
 		HostIP    string `json:"hostIp"`
 		StartTime string `json:"startTime"`
+		Port 	  string `json:"port"`
 	}
 	cpuMem struct {
 		PodName     string `json:"podName"`
@@ -97,6 +98,7 @@ func PodInfoHander(c buffalo.Context) error {
 			podInformation.pod.HostIP = pod.Status.HostIP
 			podInformation.pod.PodIP = pod.Status.PodIP
 			podInformation.pod.StartTime = pod.Status.StartTime.Time.String()
+			//podInformation.pod.Port = pod.spec.container
 
 			podStatus := pod.Spec.Containers
 			for _, spec := range podStatus {
