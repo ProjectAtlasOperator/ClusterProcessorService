@@ -72,6 +72,14 @@ func PodInfoHander(c buffalo.Context) error {
 	}
 
 	podInformation := &PodInformation{}
+	namespacesString := os.Getenv("monitorred_namespace")
+	namespacesList := strings.Split(namespacesString, ",")
+
+	for _ ,namespace := range namespacesList {
+		pods, err := clientset.CoreV1().Pods(namespace).List(context.TODO(), metav1.ListOptions{})
+} 
+
+
 
 	for {
 		// get pods in all the namespaces by omitting namespace
