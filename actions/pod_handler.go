@@ -1,59 +1,39 @@
 package actions
 
-
 import (
 	"context"
 	"fmt"
 	"github.com/gobuffalo/buffalo"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/util/json"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	metricsv "k8s.io/metrics/pkg/client/clientset/versioned"
 	"net/http"
-	"os"
-	"strings"
-	
 )
 
 type PodInformation struct {
 	PodName   string `json:"podName"`
 	Namespace string `json:"namespace"`
 	HostIP    string `json:"hostIp"`
-	PodIP     string `json:"podIp"`
+	PodIP     string `json:"podIP"`
 	StartTime string `json:"startTime"`
 
-	volume struct {
-		PodName     string `json:"podName"`
-		VolumeName  string `json:"volumeName"`
-		VolumeMount string `json:"volumeMount"`
-	}
-	pod struct {
-		Name      string `json:"name"`
-		Namespace string `json:"nameSpace"`
-		PodIP     string `json:"podIp"`
-		HostIP    string `json:"hostIp"`
-		StartTime string `json:"startTime"`
-		Port 	  string `json:"port"`
-	}
-	cpuMem struct {
-		PodName     string `json:"podName"`
-		CPUUsage    string `json:"cpuUsage"`
-		MemoryUsage string `json:"memoryUsage"`
-	}
-	image struct {
-		ImageName  string `json:"imageName"`
-		MountPath  string `json:"mountPath"`
-		VolumeName string `json:"volumeName"`
-	}
-	configMap struct {
-		Name string `json:"name"`
-	}
-	node struct {
-		Name   string `json:"name"`
-		Memory string `json:"memory"`
-	}
+	VolumePodName string `json:"volumePodName"`
+	VolumeName    string `json:"volumeName"`
+	VolumeMount   string `json:"volumeMount"`
+
+	CPUPodName  string `json:"cpuPodName"`
+	CPUUsage    string `json:"cpuUsage"`
+	MemoryUsage string `json:"memoryUsage"`
+
+	ImageName string `json:"imageName"`
+	MountPath string `json:"mountPath"`
+
+	ConfigMapName string `json:"configMapName"`
+
+	NodeName   string `json:"NodeName"`
+	NodeMemory string `json:"nodeMemory"`
 }
 
 // PodInfoHander is a default handler to serve up a home page.
@@ -72,14 +52,6 @@ func PodInfoHander(c buffalo.Context) error {
 	}
 
 	podInformation := &PodInformation{}
-	namespacesString := os.Getenv("monitorred_namespace")
-	namespacesList := strings.Split(namespacesString, ",")
-
-	for _ ,namespace := range namespacesList {
-		pods, err := clientset.CoreV1().Pods(namespace).List(context.TODO(), metav1.ListOptions{})
-} 
-
-
 
 	for {
 		// get pods in all the namespaces by omitting namespace
@@ -104,22 +76,20 @@ func PodInfoHander(c buffalo.Context) error {
 
 		//getPodInfo(pods, p, &ctx, &c)
 		for _, pod := range pods.Items {
-			podInformation.volume.PodName = pod.Name
-			podInformation.pod.Name = pod.Name
-			podInformation.pod.Namespace = pod.Namespace
-			podInformation.pod.HostIP = pod.Status.HostIP
-			podInformation.pod.PodIP = pod.Status.PodIP
-			podInformation.pod.StartTime = pod.Status.StartTime.Time.String()
-			//podInformation.pod.Port = pod.spec.container
-
+			podInformation.PodName = pod.Name
+			podInformation.Namespace = pod.Namespace
+			podInformation.HostIP = pod.Status.HostIP
+			podInformation.PodIP = pod.Status.PodIP
+			podInformation.StartTime = pod.Status.StartTime.Time.String()
+			fmt.Printf("POD informations: ", podInformation)
 			podStatus := pod.Spec.Containers
 			for _, spec := range podStatus {
 				c.Set("image", spec.Image)
 				c.Set("imageName", spec.Name)
 				volume := spec.VolumeMounts
 				for _, volume := range volume {
-					podInformation.volume.VolumeName = volume.Name
-					podInformation.volume.VolumeMount = volume.MountPath
+					podInformation.VolumeName = volume.Name
+					podInformation.VolumeMount = volume.MountPath
 					c.Set("mountPath", volume.MountPath)
 					c.Set("volumeName", volume.Name)
 				}
@@ -128,9 +98,9 @@ func PodInfoHander(c buffalo.Context) error {
 		for _, podMetric := range podsMetricList.Items {
 			podContainer := podMetric.Containers
 			for _, container := range podContainer {
-				podInformation.cpuMem.PodName = container.Name
-				podInformation.cpuMem.CPUUsage = container.Usage.Cpu().String()
-				podInformation.cpuMem.MemoryUsage = container.Usage.Memory().String()
+				podInformation.CPUPodName = container.Name
+				podInformation.CPUUsage = container.Usage.Cpu().String()
+				podInformation.MemoryUsage = container.Usage.Memory().String()
 
 				NAME := container.Name
 				CPU := container.Usage.Cpu().AsDec()
@@ -142,14 +112,14 @@ func PodInfoHander(c buffalo.Context) error {
 		}
 
 		for _, configmap := range configMap.Items {
-			podInformation.configMap.Name = configmap.Name
+			podInformation.ConfigMapName = configmap.Name
 			c.Set("cfm", configmap.Name)
 			c.Set("cfm_data", configmap.Data)
 		}
 
 		for _, node := range nodes.Items {
-			podInformation.node.Name = node.Name
-			podInformation.node.Memory = node.Usage.Memory().String()
+			podInformation.NodeName = node.Name
+			podInformation.NodeMemory = node.Usage.Memory().String()
 		}
 		fmt.Printf("There are %d pods in the cluster\n", len(pods.Items))
 		c.Set("pods", pods)
@@ -160,9 +130,9 @@ func PodInfoHander(c buffalo.Context) error {
 		//if err := c.Bind(p.pod); err != nil {
 		//	return err
 		//} // was
-		if err := c.Bind(podInformation.pod); err != nil {
-			return err
-		}
+		//if err := c.Bind(podInformation.pod); err != nil {
+		//	return err
+		//}
 
 		// - And/or cast to StatusError and use its properties like e.g. ErrStatus.Message
 		_, err = clientset.CoreV1().Pods("project-atlas-system").Get(context.TODO(), "example-xxxxx", metav1.GetOptions{})
@@ -177,16 +147,9 @@ func PodInfoHander(c buffalo.Context) error {
 		}
 		break
 	}
-
+	
 	fmt.Println(podInformation)
 
-	e, err := json.Marshal(podInformation)
-	if err != nil {
-		fmt.Println(err)
-	}
-
-	fmt.Println(e)
-
 	//return c.Render(http.StatusOK, r.HTML("pod-handler.html"))
-	return c.Render(http.StatusOK, r.JSON(e))
+	return c.Render(http.StatusOK, r.JSON(podInformation))
 }
