@@ -5,9 +5,6 @@ metadata:
   labels:
     {{- include "cluster-processor-service.labels" . | nindent 4 }}
 spec:
-env:
-- name: monitorred_namespaces
-  value: {{ join "," .Values.some.array }}
   replicas: {{ .Values.replicaCount }}
   selector:
     matchLabels:

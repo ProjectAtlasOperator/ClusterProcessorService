@@ -32,8 +32,11 @@ type PodInformation struct {
 
 	ConfigMapName string `json:"configMapName"`
 
-	NodeName   string `json:"NodeName"`
-	NodeMemory string `json:"nodeMemory"`
+	NodeName     string `json:"NodeName"`
+	NodeMemory   string `json:"nodeMemory"`
+	MDBPort      int    `json:"mdbPort"`
+	MExpressPort int    `json:"mExpressPort"`
+	CPSPort      int    `json:"cpsPort"`
 }
 
 // PodInfoHander is a default handler to serve up a home page.
@@ -74,7 +77,6 @@ func PodInfoHander(c buffalo.Context) error {
 			panic(err.Error())
 		}
 
-		//getPodInfo(pods, p, &ctx, &c)
 		for _, pod := range pods.Items {
 			podInformation.PodName = pod.Name
 			podInformation.Namespace = pod.Namespace
@@ -87,6 +89,9 @@ func PodInfoHander(c buffalo.Context) error {
 				c.Set("image", spec.Image)
 				c.Set("imageName", spec.Name)
 				volume := spec.VolumeMounts
+				for _, port := range spec.Ports {
+					podInformation.MDBPort = int(port.ContainerPort)
+				}
 				for _, volume := range volume {
 					podInformation.VolumeName = volume.Name
 					podInformation.VolumeMount = volume.MountPath
@@ -147,9 +152,6 @@ func PodInfoHander(c buffalo.Context) error {
 		}
 		break
 	}
-	
-	fmt.Println(podInformation)
 
-	//return c.Render(http.StatusOK, r.HTML("pod-handler.html"))
 	return c.Render(http.StatusOK, r.JSON(podInformation))
 }
