@@ -12,23 +12,23 @@ import (
 	"net/http"
 )
 
-type PodInformation struct {
+type PodInformation [4]struct {
 	PodName   string `json:"podName"`
 	Namespace string `json:"namespace"`
 	HostIP    string `json:"hostIp"`
 	PodIP     string `json:"podIP"`
 	StartTime string `json:"startTime"`
 
-	VolumePodName string `json:"volumePodName"`
-	VolumeName    string `json:"volumeName"`
-	VolumeMount   string `json:"volumeMount"`
+	//VolumePodName string `json:"volumePodName"`
+	VolumeName  string `json:"volumeName"`
+	VolumeMount string `json:"volumeMount"`
 
 	CPUPodName  string `json:"cpuPodName"`
 	CPUUsage    string `json:"cpuUsage"`
 	MemoryUsage string `json:"memoryUsage"`
 
-	ImageName string `json:"imageName"`
-	MountPath string `json:"mountPath"`
+	//ImageName string `json:"imageName"`
+	//MountPath string `json:"mountPath"`
 
 	ConfigMapName string `json:"configMapName"`
 
@@ -55,7 +55,7 @@ func PodInfoHander(c buffalo.Context) error {
 	}
 
 	podInformation := &PodInformation{}
-
+	//var _podArray [4]byte
 	for {
 		// get pods in all the namespaces by omitting namespace
 		// Or specify namespace to get pods in particular namespace
@@ -77,67 +77,64 @@ func PodInfoHander(c buffalo.Context) error {
 			panic(err.Error())
 		}
 
-		for _, pod := range pods.Items {
-			podInformation.PodName = pod.Name
-			podInformation.Namespace = pod.Namespace
-			podInformation.HostIP = pod.Status.HostIP
-			podInformation.PodIP = pod.Status.PodIP
-			podInformation.StartTime = pod.Status.StartTime.Time.String()
-			fmt.Printf("POD informations: ", podInformation)
-			podStatus := pod.Spec.Containers
-			for _, spec := range podStatus {
-				c.Set("image", spec.Image)
-				c.Set("imageName", spec.Name)
-				volume := spec.VolumeMounts
-				for _, port := range spec.Ports {
-					podInformation.MDBPort = int(port.ContainerPort)
-				}
-				for _, volume := range volume {
-					podInformation.VolumeName = volume.Name
-					podInformation.VolumeMount = volume.MountPath
-					c.Set("mountPath", volume.MountPath)
-					c.Set("volumeName", volume.Name)
+		for i := 0; i < len(pods.Items); i++ {
+			for _, pod := range pods.Items {
+				podInformation[i].PodName = pods.Items[i].Name
+				podInformation[i].Namespace = pods.Items[i].Namespace
+				podInformation[i].HostIP = pods.Items[i].Status.HostIP
+				podInformation[i].PodIP = pods.Items[i].Status.PodIP
+				podInformation[i].StartTime = pods.Items[i].Status.StartTime.Time.String()
+				//podInformation[i].MDBPort = int(pods.Items[i].Spec.Containers[i].Ports[i].ContainerPort)
+				//podInformation[i].VolumeName = pods.Items[i].Spec.Containers[i].VolumeMounts[i].Name
+				//podInformation[i].VolumeMount = pods.Items[i].Spec.Containers[i].VolumeMounts[i].MountPath
+				//podInformation[i].CPUUsage = podsMetricList.Items[i].Containers[i].Usage.Cpu().String()
+				//podInformation[i].MemoryUsage = podsMetricList.Items[i].Containers[i].Usage.Memory().String()
+				//podInformation[i].ConfigMapName = configMap.Items[i].Name
+				//podInformation[i].NodeName = nodes.Items[i].Name
+
+				podStatus := pod.Spec.Containers
+				for _, spec := range podStatus {
+					c.Set("image", spec.Image)
+					c.Set("imageName", spec.Name)
+					volume := spec.VolumeMounts
+					for _, port := range spec.Ports {
+						podInformation[i].MDBPort = int(port.ContainerPort)
+					}
+					for _, volume := range volume {
+						podInformation[i].VolumeName = volume.Name
+						podInformation[i].VolumeMount = volume.MountPath
+						c.Set("mountPath", volume.MountPath)
+						c.Set("volumeName", volume.Name)
+					}
 				}
 			}
-		}
-		for _, podMetric := range podsMetricList.Items {
-			podContainer := podMetric.Containers
-			for _, container := range podContainer {
-				podInformation.CPUPodName = container.Name
-				podInformation.CPUUsage = container.Usage.Cpu().String()
-				podInformation.MemoryUsage = container.Usage.Memory().String()
 
-				NAME := container.Name
-				CPU := container.Usage.Cpu().AsDec()
-				MEMORY := container.Usage.Memory()
-				c.Set("NAME", NAME)
-				c.Set("CPU", CPU)
-				c.Set("MEMORY", MEMORY)
+			for _, podMetric := range podsMetricList.Items {
+				podContainer := podMetric.Containers
+				for _, container := range podContainer {
+					podInformation[i].CPUPodName = container.Name
+					podInformation[i].CPUUsage = container.Usage.Cpu().String()
+					podInformation[i].MemoryUsage = container.Usage.Memory().String()
+
+					NAME := container.Name
+					CPU := container.Usage.Cpu().AsDec()
+					MEMORY := container.Usage.Memory()
+					c.Set("NAME", NAME)
+					c.Set("CPU", CPU)
+					c.Set("MEMORY", MEMORY)
+				}
+			}
+
+			for _, configmap := range configMap.Items {
+				podInformation[i].ConfigMapName = configmap.Name
+				c.Set("cfm", configmap.Name)
+				c.Set("cfm_data", configmap.Data)
 			}
 		}
 
-		for _, configmap := range configMap.Items {
-			podInformation.ConfigMapName = configmap.Name
-			c.Set("cfm", configmap.Name)
-			c.Set("cfm_data", configmap.Data)
-		}
-
-		for _, node := range nodes.Items {
-			podInformation.NodeName = node.Name
-			podInformation.NodeMemory = node.Usage.Memory().String()
-		}
 		fmt.Printf("There are %d pods in the cluster\n", len(pods.Items))
-		c.Set("pods", pods)
 		c.Set("nodeName", nodes.Items[0].Name)
 		c.Set("nodeMemory", nodes.Items[0].Usage.Memory())
-
-		//return c.Render(http.StatusOK, r.HTML("index.html"))
-		//if err := c.Bind(p.pod); err != nil {
-		//	return err
-		//} // was
-		//if err := c.Bind(podInformation.pod); err != nil {
-		//	return err
-		//}
 
 		// - And/or cast to StatusError and use its properties like e.g. ErrStatus.Message
 		_, err = clientset.CoreV1().Pods("project-atlas-system").Get(context.TODO(), "example-xxxxx", metav1.GetOptions{})
