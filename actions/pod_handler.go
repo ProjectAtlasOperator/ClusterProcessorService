@@ -12,7 +12,11 @@ import (
 	"net/http"
 )
 
-type PodInformation [4]struct {
+type PodInformations struct {
+	PodInformations [4]PodInformation `json:"podInformations"`
+}
+
+type PodInformation struct {
 	PodName   string `json:"podName"`
 	Namespace string `json:"namespace"`
 	HostIP    string `json:"hostIp"`
@@ -54,7 +58,7 @@ func PodInfoHander(c buffalo.Context) error {
 		panic(err.Error())
 	}
 
-	podInformation := &PodInformation{}
+	var podInformations PodInformations
 	//var _podArray [4]byte
 	for {
 		// get pods in all the namespaces by omitting namespace
@@ -79,11 +83,11 @@ func PodInfoHander(c buffalo.Context) error {
 
 		for i := 0; i < len(pods.Items); i++ {
 			for _, pod := range pods.Items {
-				podInformation[i].PodName = pods.Items[i].Name
-				podInformation[i].Namespace = pods.Items[i].Namespace
-				podInformation[i].HostIP = pods.Items[i].Status.HostIP
-				podInformation[i].PodIP = pods.Items[i].Status.PodIP
-				podInformation[i].StartTime = pods.Items[i].Status.StartTime.Time.String()
+				podInformations.PodInformations[i].PodName = pods.Items[i].Name
+				podInformations.PodInformations[i].Namespace = pods.Items[i].Namespace
+				podInformations.PodInformations[i].HostIP = pods.Items[i].Status.HostIP
+				podInformations.PodInformations[i].PodIP = pods.Items[i].Status.PodIP
+				podInformations.PodInformations[i].StartTime = pods.Items[i].Status.StartTime.Time.String()
 				//podInformation[i].MDBPort = int(pods.Items[i].Spec.Containers[i].Ports[i].ContainerPort)
 				//podInformation[i].VolumeName = pods.Items[i].Spec.Containers[i].VolumeMounts[i].Name
 				//podInformation[i].VolumeMount = pods.Items[i].Spec.Containers[i].VolumeMounts[i].MountPath
@@ -98,11 +102,11 @@ func PodInfoHander(c buffalo.Context) error {
 					c.Set("imageName", spec.Name)
 					volume := spec.VolumeMounts
 					for _, port := range spec.Ports {
-						podInformation[i].MDBPort = int(port.ContainerPort)
+						podInformations.PodInformations[i].MDBPort = int(port.ContainerPort)
 					}
 					for _, volume := range volume {
-						podInformation[i].VolumeName = volume.Name
-						podInformation[i].VolumeMount = volume.MountPath
+						podInformations.PodInformations[i].VolumeName = volume.Name
+						podInformations.PodInformations[i].VolumeMount = volume.MountPath
 						c.Set("mountPath", volume.MountPath)
 						c.Set("volumeName", volume.Name)
 					}
@@ -112,9 +116,9 @@ func PodInfoHander(c buffalo.Context) error {
 			for _, podMetric := range podsMetricList.Items {
 				podContainer := podMetric.Containers
 				for _, container := range podContainer {
-					podInformation[i].CPUPodName = container.Name
-					podInformation[i].CPUUsage = container.Usage.Cpu().String()
-					podInformation[i].MemoryUsage = container.Usage.Memory().String()
+					podInformations.PodInformations[i].CPUPodName = container.Name
+					podInformations.PodInformations[i].CPUUsage = container.Usage.Cpu().String()
+					podInformations.PodInformations[i].MemoryUsage = container.Usage.Memory().String()
 
 					NAME := container.Name
 					CPU := container.Usage.Cpu().AsDec()
@@ -126,7 +130,7 @@ func PodInfoHander(c buffalo.Context) error {
 			}
 
 			for _, configmap := range configMap.Items {
-				podInformation[i].ConfigMapName = configmap.Name
+				podInformations.PodInformations[i].ConfigMapName = configmap.Name
 				c.Set("cfm", configmap.Name)
 				c.Set("cfm_data", configmap.Data)
 			}
@@ -150,5 +154,5 @@ func PodInfoHander(c buffalo.Context) error {
 		break
 	}
 
-	return c.Render(http.StatusOK, r.JSON(podInformation))
+	return c.Render(http.StatusOK, r.JSON(podInformations))
 }
