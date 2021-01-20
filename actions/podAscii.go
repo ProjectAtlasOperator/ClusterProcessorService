@@ -46,7 +46,7 @@ func PodAsciiHander(c buffalo.Context) error {
 
 		for i := 0; i < len(pods.Items); i++ {
 			for _, pod := range pods.Items {
-				asciiDocString.WriteString("|===\nPOD" )
+				asciiDocString.WriteString("|===\nPOD | INFO\n" )
 				asciiDocString.WriteString("\n\n|PodName\n|" )
 				asciiDocString.WriteString(pods.Items[i].Name)
 
@@ -73,9 +73,9 @@ func PodAsciiHander(c buffalo.Context) error {
 
 				podStatus := pod.Spec.Containers
 				for _, spec := range podStatus {
-					asciiDocString.WriteString("|===\n|ENV |VALUE\n" )
+					asciiDocString.WriteString("|===\n|ENV |VALUE\n\n|" )
 					asciiDocString.WriteString(spec.Env[0].Name)
-					asciiDocString.WriteString("\n" )
+					asciiDocString.WriteString("\n|" )
 					asciiDocString.WriteString(spec.Env[0].Value)
 					asciiDocString.WriteString("\n\n|===\n\n" )
 				}
