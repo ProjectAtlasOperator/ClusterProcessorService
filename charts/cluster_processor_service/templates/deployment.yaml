@@ -31,6 +31,9 @@ spec:
             - name: http
               containerPort: 3000
               protocol: TCP
+          env:
+            - name: cluster-procesor-service-variable
+              value: cluster-procesor-service-variable-value
           livenessProbe:
             httpGet:
               path: /
