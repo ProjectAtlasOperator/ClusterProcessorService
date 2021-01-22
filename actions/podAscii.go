@@ -8,7 +8,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
-	metricsv "k8s.io/metrics/pkg/client/clientset/versioned"
 	"net/http"
 	"strings"
 )
@@ -23,10 +22,6 @@ func PodAsciiHander(c buffalo.Context) error {
 	if err != nil {
 		panic(err.Error())
 	}
-	clientsetMetrics, err := metricsv.NewForConfig(config)
-	if err != nil {
-		panic(err.Error())
-	}
 
 	var asciiDocString = strings.Builder{}
 	//podInformation := &PodInformation{}
@@ -38,55 +33,44 @@ func PodAsciiHander(c buffalo.Context) error {
 		if err != nil {
 			panic(err.Error())
 		}
-		nodes, err := clientsetMetrics.MetricsV1beta1().NodeMetricses().List(context.TODO(), metav1.ListOptions{})
-		if err != nil {
-			panic(err.Error())
-		}
-
 
 		for i := 0; i < len(pods.Items); i++ {
 			for _, pod := range pods.Items {
-				asciiDocString.WriteString("|===\nPOD | INFO\n" )
-				asciiDocString.WriteString("\n\n|PodName\n|" )
+				asciiDocString.WriteString("|===\nPOD | INFO\n")
+				asciiDocString.WriteString("\n\n|PodName\n|")
 				asciiDocString.WriteString(pods.Items[i].Name)
 
-				asciiDocString.WriteString("\n\n|Namespace\n|" )
+				asciiDocString.WriteString("\n\n|Namespace\n|")
 				asciiDocString.WriteString(pods.Items[i].Namespace)
 
-				asciiDocString.WriteString("\n\n|HostIP\n|" )
+				asciiDocString.WriteString("\n\n|HostIP\n|")
 				asciiDocString.WriteString(pods.Items[i].Status.HostIP)
 
-				asciiDocString.WriteString("\n\n|PodIP\n|" )
+				asciiDocString.WriteString("\n\n|PodIP\n|")
 				asciiDocString.WriteString(pods.Items[i].Status.PodIP)
 
-				asciiDocString.WriteString("\n\n|StarTime\n|" )
+				asciiDocString.WriteString("\n\n|StarTime\n|")
 				asciiDocString.WriteString(pods.Items[i].Status.StartTime.Time.String())
 
-				asciiDocString.WriteString("\n\n|===\n\n" )
-				//podInformation[i].MDBPort = int(pods.Items[i].Spec.Containers[i].Ports[i].ContainerPort)
-				//podInformation[i].VolumeName = pods.Items[i].Spec.Containers[i].VolumeMounts[i].Name
-				//podInformation[i].VolumeMount = pods.Items[i].Spec.Containers[i].VolumeMounts[i].MountPath
-				//podInformation[i].CPUUsage = podsMetricList.Items[i].Containers[i].Usage.Cpu().String()
-				//podInformation[i].MemoryUsage = podsMetricList.Items[i].Containers[i].Usage.Memory().String()
-				//podInformation[i].ConfigMapName = configMap.Items[i].Name
-				//podInformation[i].NodeName = nodes.Items[i].Name
-			if len(nodes.Items) > 1{
-				podStatus := pod.Spec.Containers
-				for _, spec := range podStatus {
-					asciiDocString.WriteString("|===\n|ENV |VALUE\n\n|" )
-					asciiDocString.WriteString(spec.Env[0].Name)
-					asciiDocString.WriteString("\n|" )
-					asciiDocString.WriteString(spec.Env[0].Value)
-					asciiDocString.WriteString("\n\n|===\n\n" )
+				asciiDocString.WriteString("\n\n|===\n\n")
+				if len(pods.Items) > 0 {
+					envVariables := pod.Spec.Containers[0].Env
+					if len(envVariables) > 0 {
+						asciiDocString.WriteString("|===\n|ENV |VALUE\n\n|")
+						for _, spec := range envVariables {
+							asciiDocString.WriteString(spec.Name)
+							asciiDocString.WriteString("\n|")
+							asciiDocString.WriteString(spec.Value)
+							//asciiDocString.WriteString(spec.ValueFrom.SecretKeyRef.Name)
+							asciiDocString.WriteString("\n|")
+						}
+						asciiDocString.WriteString("\n|===\n\n")
 					}
 				}
 			}
 		}
 
 		fmt.Printf("There are %d pods in the cluster\n", len(pods.Items))
-		c.Set("nodeName", nodes.Items[0].Name)
-		c.Set("nodeMemory", nodes.Items[0].Usage.Memory())
-
 		// - And/or cast to StatusError and use its properties like e.g. ErrStatus.Message
 		_, err = clientset.CoreV1().Pods("project-atlas-system").Get(context.TODO(), "example-xxxxx", metav1.GetOptions{})
 		if errors.IsNotFound(err) {
@@ -101,7 +85,6 @@ func PodAsciiHander(c buffalo.Context) error {
 		break
 	}
 
-	return c.Render(http.StatusCreated,  r.Download(c,"ascii.adoc", strings.NewReader(asciiDocString.String())))
+	return c.Render(http.StatusCreated, r.Download(c, "ascii.adoc", strings.NewReader(asciiDocString.String())))
 
 }
-
