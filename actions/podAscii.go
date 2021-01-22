@@ -70,7 +70,7 @@ func PodAsciiHander(c buffalo.Context) error {
 				//podInformation[i].MemoryUsage = podsMetricList.Items[i].Containers[i].Usage.Memory().String()
 				//podInformation[i].ConfigMapName = configMap.Items[i].Name
 				//podInformation[i].NodeName = nodes.Items[i].Name
-
+			if len(nodes.Items) > 1{
 				podStatus := pod.Spec.Containers
 				for _, spec := range podStatus {
 					asciiDocString.WriteString("|===\n|ENV |VALUE\n\n|" )
@@ -78,6 +78,7 @@ func PodAsciiHander(c buffalo.Context) error {
 					asciiDocString.WriteString("\n|" )
 					asciiDocString.WriteString(spec.Env[0].Value)
 					asciiDocString.WriteString("\n\n|===\n\n" )
+					}
 				}
 			}
 		}
