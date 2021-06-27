@@ -3,13 +3,13 @@ package actions
 import (
 	"context"
 	"fmt"
+	"net/http"
+
 	"github.com/gobuffalo/buffalo"
-	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	metricsv "k8s.io/metrics/pkg/client/clientset/versioned"
-	"net/http"
 )
 
 type PodInformations struct {
@@ -19,11 +19,8 @@ type PodInformations struct {
 type PodInformation struct {
 	PodName   string `json:"podName"`
 	Namespace string `json:"namespace"`
-	HostIP    string `json:"hostIp"`
-	PodIP     string `json:"podIP"`
 	StartTime string `json:"startTime"`
 
-	//VolumePodName string `json:"volumePodName"`
 	VolumeName  string `json:"volumeName"`
 	VolumeMount string `json:"volumeMount"`
 
@@ -31,20 +28,21 @@ type PodInformation struct {
 	CPUUsage    string `json:"cpuUsage"`
 	MemoryUsage string `json:"memoryUsage"`
 
-	//ImageName string `json:"imageName"`
-	//MountPath string `json:"mountPath"`
+	ImageName string `json:"imageName"`
+	MountPath string `json:"mountPath"`
 
 	ConfigMapName string `json:"configMapName"`
-
-	NodeName     string `json:"NodeName"`
-	NodeMemory   string `json:"nodeMemory"`
-	MDBPort      int    `json:"mdbPort"`
-	MExpressPort int    `json:"mExpressPort"`
-	CPSPort      int    `json:"cpsPort"`
 }
 
 // PodInfoHander is a default handler to serve up a home page.
 func PodInfoHander(c buffalo.Context) error {
+	namespace := c.Param("namespace")
+	fmt.Println("=> Using namespace: " + namespace)
+	if len(namespace) == 0 {
+		fmt.Println("=> Url Param 'namespace' is missing. Using 'default' namespace")
+		namespace = "default"
+	}
+
 	config, err := rest.InClusterConfig()
 	if err != nil {
 		panic(err.Error())
@@ -59,19 +57,17 @@ func PodInfoHander(c buffalo.Context) error {
 	}
 
 	var podInformations PodInformations
-	//var _podArray [4]byte
+
 	for {
-		// get pods in all the namespaces by omitting namespace
-		// Or specify namespace to get pods in particular namespace
-		pods, err := clientset.CoreV1().Pods("project-atlas-system").List(context.TODO(), metav1.ListOptions{})
+		pods, err := clientset.CoreV1().Pods(namespace).List(context.TODO(), metav1.ListOptions{})
 		if err != nil {
 			panic(err.Error())
 		}
-		configMap, err := clientset.CoreV1().ConfigMaps("project-atlas-system").List(context.TODO(), metav1.ListOptions{})
+		configMap, err := clientset.CoreV1().ConfigMaps(namespace).List(context.TODO(), metav1.ListOptions{})
 		if err != nil {
 			panic(err.Error())
 		}
-		podsMetricList, err := clientsetMetrics.MetricsV1beta1().PodMetricses("project-atlas-system").List(context.TODO(), metav1.ListOptions{})
+		podsMetricList, err := clientsetMetrics.MetricsV1beta1().PodMetricses(namespace).List(context.TODO(), metav1.ListOptions{})
 		if err != nil {
 			panic(err.Error())
 		}
@@ -85,25 +81,18 @@ func PodInfoHander(c buffalo.Context) error {
 			for _, pod := range pods.Items {
 				podInformations.PodInformations[i].PodName = pods.Items[i].Name
 				podInformations.PodInformations[i].Namespace = pods.Items[i].Namespace
-				podInformations.PodInformations[i].HostIP = pods.Items[i].Status.HostIP
-				podInformations.PodInformations[i].PodIP = pods.Items[i].Status.PodIP
 				podInformations.PodInformations[i].StartTime = pods.Items[i].Status.StartTime.Time.String()
-				//podInformation[i].MDBPort = int(pods.Items[i].Spec.Containers[i].Ports[i].ContainerPort)
-				//podInformation[i].VolumeName = pods.Items[i].Spec.Containers[i].VolumeMounts[i].Name
-				//podInformation[i].VolumeMount = pods.Items[i].Spec.Containers[i].VolumeMounts[i].MountPath
-				//podInformation[i].CPUUsage = podsMetricList.Items[i].Containers[i].Usage.Cpu().String()
-				//podInformation[i].MemoryUsage = podsMetricList.Items[i].Containers[i].Usage.Memory().String()
-				//podInformation[i].ConfigMapName = configMap.Items[i].Name
-				//podInformation[i].NodeName = nodes.Items[i].Name
+				podInformations.PodInformations[i].VolumeName = pods.Items[i].Spec.Containers[i].VolumeMounts[i].Name
+				podInformations.PodInformations[i].VolumeMount = pods.Items[i].Spec.Containers[i].VolumeMounts[i].MountPath
+				podInformations.PodInformations[i].CPUUsage = podsMetricList.Items[i].Containers[i].Usage.Cpu().String()
+				podInformations.PodInformations[i].MemoryUsage = podsMetricList.Items[i].Containers[i].Usage.Memory().String()
+				podInformations.PodInformations[i].ConfigMapName = configMap.Items[i].Name
 
 				podStatus := pod.Spec.Containers
 				for _, spec := range podStatus {
 					c.Set("image", spec.Image)
 					c.Set("imageName", spec.Name)
 					volume := spec.VolumeMounts
-					for _, port := range spec.Ports {
-						podInformations.PodInformations[i].MDBPort = int(port.ContainerPort)
-					}
 					for _, volume := range volume {
 						podInformations.PodInformations[i].VolumeName = volume.Name
 						podInformations.PodInformations[i].VolumeMount = volume.MountPath
@@ -139,18 +128,6 @@ func PodInfoHander(c buffalo.Context) error {
 		fmt.Printf("There are %d pods in the cluster\n", len(pods.Items))
 		c.Set("nodeName", nodes.Items[0].Name)
 		c.Set("nodeMemory", nodes.Items[0].Usage.Memory())
-
-		// - And/or cast to StatusError and use its properties like e.g. ErrStatus.Message
-		_, err = clientset.CoreV1().Pods("project-atlas-system").Get(context.TODO(), "example-xxxxx", metav1.GetOptions{})
-		if errors.IsNotFound(err) {
-			fmt.Printf("Pod example-xxxxx not found in default namespace\n")
-		} else if statusError, isStatus := err.(*errors.StatusError); isStatus {
-			fmt.Printf("Error getting pod %v\n", statusError.ErrStatus.Message)
-		} else if err != nil {
-			panic(err.Error())
-		} else {
-			fmt.Printf("Found example-xxxxx pod in default namespace\n")
-		}
 		break
 	}
 
