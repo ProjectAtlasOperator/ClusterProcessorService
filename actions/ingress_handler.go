@@ -11,6 +11,10 @@ import (
 	"k8s.io/client-go/rest"
 )
 
+type IngressInformation struct {
+	Host string `json:"host"`
+}
+
 func IngressHander(c buffalo.Context) error {
 	namespace := c.Param("namespace")
 	fmt.Println("=> Using namespace: " + namespace)
@@ -32,5 +36,15 @@ func IngressHander(c buffalo.Context) error {
 		panic(err.Error())
 	}
 
-	return c.Render(http.StatusOK, r.JSON(ingresses.Items))
+	ingressInformations := []IngressInformation{}
+
+	for _, ingress := range ingresses.Items {
+		ingressInformation := IngressInformation{}
+		for _, rule := range ingress.Spec.Rules {
+			ingressInformation.Host = rule.Host
+		}
+		ingressInformations = append(ingressInformations, ingressInformation)
+	}
+
+	return c.Render(http.StatusOK, r.JSON(ingressInformations))
 }
