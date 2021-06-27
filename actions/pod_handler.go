@@ -58,64 +58,61 @@ func PodInfoHander(c buffalo.Context) error {
 
 	var podInformations PodInformations
 
-	for {
-		pods, err := clientset.CoreV1().Pods(namespace).List(context.TODO(), metav1.ListOptions{})
-		if err != nil {
-			panic(err.Error())
-		}
-		configMap, err := clientset.CoreV1().ConfigMaps(namespace).List(context.TODO(), metav1.ListOptions{})
-		if err != nil {
-			panic(err.Error())
-		}
-		podsMetricList, err := clientsetMetrics.MetricsV1beta1().PodMetricses(namespace).List(context.TODO(), metav1.ListOptions{})
-		if err != nil {
-			panic(err.Error())
-		}
-
-		for i := 0; i < len(pods.Items); i++ {
-			for _, pod := range pods.Items {
-				podInformations.PodInformations[i].PodName = pods.Items[i].Name
-
-				podStatus := pod.Spec.Containers
-				for _, spec := range podStatus {
-					c.Set("image", spec.Image)
-					c.Set("imageName", spec.Name)
-					volume := spec.VolumeMounts
-					for _, volume := range volume {
-						podInformations.PodInformations[i].VolumeName = volume.Name
-						podInformations.PodInformations[i].VolumeMount = volume.MountPath
-						c.Set("mountPath", volume.MountPath)
-						c.Set("volumeName", volume.Name)
-					}
-				}
-			}
-
-			for _, podMetric := range podsMetricList.Items {
-				podContainer := podMetric.Containers
-				for _, container := range podContainer {
-					podInformations.PodInformations[i].CPUPodName = container.Name
-					podInformations.PodInformations[i].CPUUsage = container.Usage.Cpu().String()
-					podInformations.PodInformations[i].MemoryUsage = container.Usage.Memory().String()
-
-					NAME := container.Name
-					CPU := container.Usage.Cpu().AsDec()
-					MEMORY := container.Usage.Memory()
-					c.Set("NAME", NAME)
-					c.Set("CPU", CPU)
-					c.Set("MEMORY", MEMORY)
-				}
-			}
-
-			for _, configmap := range configMap.Items {
-				podInformations.PodInformations[i].ConfigMapName = configmap.Name
-				c.Set("cfm", configmap.Name)
-				c.Set("cfm_data", configmap.Data)
-			}
-		}
-
-		fmt.Printf("There are %d pods in the cluster\n", len(pods.Items))
-		break
+	pods, err := clientset.CoreV1().Pods(namespace).List(context.TODO(), metav1.ListOptions{})
+	if err != nil {
+		panic(err.Error())
 	}
+	configMap, err := clientset.CoreV1().ConfigMaps(namespace).List(context.TODO(), metav1.ListOptions{})
+	if err != nil {
+		panic(err.Error())
+	}
+	podsMetricList, err := clientsetMetrics.MetricsV1beta1().PodMetricses(namespace).List(context.TODO(), metav1.ListOptions{})
+	if err != nil {
+		panic(err.Error())
+	}
+
+	for i := 0; i < len(pods.Items); i++ {
+		for _, pod := range pods.Items {
+			podInformations.PodInformations[i].PodName = pods.Items[i].Name
+
+			podStatus := pod.Spec.Containers
+			for _, spec := range podStatus {
+				c.Set("image", spec.Image)
+				c.Set("imageName", spec.Name)
+				volume := spec.VolumeMounts
+				for _, volume := range volume {
+					podInformations.PodInformations[i].VolumeName = volume.Name
+					podInformations.PodInformations[i].VolumeMount = volume.MountPath
+					c.Set("mountPath", volume.MountPath)
+					c.Set("volumeName", volume.Name)
+				}
+			}
+		}
+
+		for _, podMetric := range podsMetricList.Items {
+			podContainer := podMetric.Containers
+			for _, container := range podContainer {
+				podInformations.PodInformations[i].CPUPodName = container.Name
+				podInformations.PodInformations[i].CPUUsage = container.Usage.Cpu().String()
+				podInformations.PodInformations[i].MemoryUsage = container.Usage.Memory().String()
+
+				NAME := container.Name
+				CPU := container.Usage.Cpu().AsDec()
+				MEMORY := container.Usage.Memory()
+				c.Set("NAME", NAME)
+				c.Set("CPU", CPU)
+				c.Set("MEMORY", MEMORY)
+			}
+		}
+
+		for _, configmap := range configMap.Items {
+			podInformations.PodInformations[i].ConfigMapName = configmap.Name
+			c.Set("cfm", configmap.Name)
+			c.Set("cfm_data", configmap.Data)
+		}
+	}
+
+	fmt.Printf("There are %d pods in the cluster\n", len(pods.Items))
 
 	return c.Render(http.StatusOK, r.JSON(podInformations))
 }
