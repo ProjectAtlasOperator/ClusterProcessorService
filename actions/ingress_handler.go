@@ -11,15 +11,13 @@ import (
 	"k8s.io/client-go/rest"
 )
 
-// PodInfoHander is a default handler to serve up a home page.
-func PodInfoHander(c buffalo.Context) error {
+func IngressHander(c buffalo.Context) error {
 	namespace := c.Param("namespace")
 	fmt.Println("=> Using namespace: " + namespace)
 	if len(namespace) == 0 {
 		fmt.Println("=> Url Param 'namespace' is missing. Using 'default' namespace")
 		namespace = "default"
 	}
-
 	config, err := rest.InClusterConfig()
 	if err != nil {
 		panic(err.Error())
@@ -29,9 +27,10 @@ func PodInfoHander(c buffalo.Context) error {
 		panic(err.Error())
 	}
 
-	pods, err := clientset.CoreV1().Pods(namespace).List(context.TODO(), metav1.ListOptions{})
+	ingresses, err := clientset.ExtensionsV1beta1().Ingresses(namespace).List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
 		panic(err.Error())
 	}
-	return c.Render(http.StatusOK, r.JSON(pods.Items))
+
+	return c.Render(http.StatusOK, r.JSON(ingresses.Items))
 }

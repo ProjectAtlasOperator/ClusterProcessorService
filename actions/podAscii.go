@@ -31,8 +31,6 @@ func PodAsciiHander(c buffalo.Context) error {
 	}
 
 	var asciiDocString = strings.Builder{}
-	//podInformation := &PodInformation{}
-	//var _podArray [4]byte
 
 	// get pods in all the namespaces by omitting namespace
 	// Or specify namespace to get pods in particular namespace
@@ -58,17 +56,19 @@ func PodAsciiHander(c buffalo.Context) error {
 
 			asciiDocString.WriteString("\n\n|===\n\n")
 			if len(pods.Items) > 0 {
-				envVariables := pod.Spec.Containers[0].Env
-				if len(envVariables) > 0 {
-					asciiDocString.WriteString("|===\n|ENV |VALUE\n\n|")
-					for _, spec := range envVariables {
-						asciiDocString.WriteString(spec.Name)
-						asciiDocString.WriteString("\n|")
-						asciiDocString.WriteString(spec.Value)
-						//asciiDocString.WriteString(spec.ValueFrom.SecretKeyRef.Name)
-						asciiDocString.WriteString("\n|")
+				for _, container := range pod.Spec.Containers {
+					envVariables := container.Env
+					if len(envVariables) > 0 {
+						asciiDocString.WriteString("|===\n|ENV |VALUE\n\n|")
+						for _, spec := range envVariables {
+							asciiDocString.WriteString(spec.Name)
+							asciiDocString.WriteString("\n|")
+							asciiDocString.WriteString(spec.Value)
+							//asciiDocString.WriteString(spec.ValueFrom.SecretKeyRef.Name)
+							asciiDocString.WriteString("\n|")
+						}
+						asciiDocString.WriteString("\n|===\n\n")
 					}
-					asciiDocString.WriteString("\n|===\n\n")
 				}
 			}
 		}
