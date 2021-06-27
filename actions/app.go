@@ -8,6 +8,8 @@ import (
 	i18n "github.com/gobuffalo/mw-i18n"
 	paramlogger "github.com/gobuffalo/mw-paramlogger"
 	"github.com/gobuffalo/packr/v2"
+	"github.com/gobuffalo/x/sessions"
+	"github.com/rs/cors"
 	"github.com/unrolled/secure"
 )
 
@@ -33,8 +35,12 @@ var T *i18n.Translator
 func App() *buffalo.App {
 	if app == nil {
 		app = buffalo.New(buffalo.Options{
-			Env:         ENV,
-			SessionName: "_cluster_processor_service_session",
+			Env:          ENV,
+			SessionStore: sessions.Null{},
+			SessionName:  "_cluster_processor_service_session",
+			PreWares: []buffalo.PreWare{
+				cors.Default().Handler,
+			},
 		})
 
 		// Automatically redirect to SSL

@@ -2,16 +2,13 @@ package actions
 
 import (
 	"context"
+	"net/http"
+
 	"github.com/gobuffalo/buffalo"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
-	"net/http"
 )
-
-//type NameSpaces struct {
-//	NameSpaces [4]Namespace `json:"podInformations"`
-//}
 
 type Namespace [10]struct {
 	Name string `json:"name"`

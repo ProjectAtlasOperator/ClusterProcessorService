@@ -11,6 +11,8 @@ require (
 	github.com/gobuffalo/mw-paramlogger v1.0.0
 	github.com/gobuffalo/packr/v2 v2.8.0
 	github.com/gobuffalo/suite v2.8.2+incompatible
+	github.com/gobuffalo/x v0.0.0-20190224155809-6bb134105960
+	github.com/rs/cors v1.7.0
 	github.com/unrolled/secure v1.0.8
 	go.mongodb.org/mongo-driver v1.4.3
 	k8s.io/api v0.19.3
