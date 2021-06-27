@@ -55,6 +55,9 @@ func App() *buffalo.App {
 		app.GET("/api/podInformation", PodInfoHander) // communication with api-service
 
 		app.GET("/api/namespaces", NamespaceHander)
+
+		app.GET("/api/ingresses", IngressHander)
+
 		// communication with api-service
 		app.GET("/downloadAsciiDoc", PodAsciiHander) // communication with api-service
 
