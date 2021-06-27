@@ -72,11 +72,6 @@ func PodInfoHander(c buffalo.Context) error {
 			panic(err.Error())
 		}
 
-		nodes, err := clientsetMetrics.MetricsV1beta1().NodeMetricses().List(context.TODO(), metav1.ListOptions{})
-		if err != nil {
-			panic(err.Error())
-		}
-
 		for i := 0; i < len(pods.Items); i++ {
 			for _, pod := range pods.Items {
 				podInformations.PodInformations[i].PodName = pods.Items[i].Name
