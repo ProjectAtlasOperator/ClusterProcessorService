@@ -12,10 +12,6 @@ import (
 	metricsv "k8s.io/metrics/pkg/client/clientset/versioned"
 )
 
-type PodInformations struct {
-	PodInformations [4]PodInformation `json:"podInformations"`
-}
-
 type PodInformation struct {
 	PodName   string `json:"podName"`
 	Namespace string `json:"namespace"`
@@ -56,7 +52,7 @@ func PodInfoHander(c buffalo.Context) error {
 		panic(err.Error())
 	}
 
-	var podInformations PodInformations
+	podInformations := []PodInformation{}
 
 	pods, err := clientset.CoreV1().Pods(namespace).List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
@@ -72,8 +68,10 @@ func PodInfoHander(c buffalo.Context) error {
 	}
 
 	for i := 0; i < len(pods.Items); i++ {
+		podInformation := PodInformation{}
+
 		for _, pod := range pods.Items {
-			podInformations.PodInformations[i].PodName = pods.Items[i].Name
+			podInformation.PodName = pods.Items[i].Name
 
 			podStatus := pod.Spec.Containers
 			for _, spec := range podStatus {
@@ -81,8 +79,8 @@ func PodInfoHander(c buffalo.Context) error {
 				c.Set("imageName", spec.Name)
 				volume := spec.VolumeMounts
 				for _, volume := range volume {
-					podInformations.PodInformations[i].VolumeName = volume.Name
-					podInformations.PodInformations[i].VolumeMount = volume.MountPath
+					podInformation.VolumeName = volume.Name
+					podInformation.VolumeMount = volume.MountPath
 					c.Set("mountPath", volume.MountPath)
 					c.Set("volumeName", volume.Name)
 				}
@@ -92,9 +90,9 @@ func PodInfoHander(c buffalo.Context) error {
 		for _, podMetric := range podsMetricList.Items {
 			podContainer := podMetric.Containers
 			for _, container := range podContainer {
-				podInformations.PodInformations[i].CPUPodName = container.Name
-				podInformations.PodInformations[i].CPUUsage = container.Usage.Cpu().String()
-				podInformations.PodInformations[i].MemoryUsage = container.Usage.Memory().String()
+				podInformation.CPUPodName = container.Name
+				podInformation.CPUUsage = container.Usage.Cpu().String()
+				podInformation.MemoryUsage = container.Usage.Memory().String()
 
 				NAME := container.Name
 				CPU := container.Usage.Cpu().AsDec()
@@ -106,13 +104,11 @@ func PodInfoHander(c buffalo.Context) error {
 		}
 
 		for _, configmap := range configMap.Items {
-			podInformations.PodInformations[i].ConfigMapName = configmap.Name
+			podInformation.ConfigMapName = configmap.Name
 			c.Set("cfm", configmap.Name)
 			c.Set("cfm_data", configmap.Data)
 		}
+		podInformations = append(podInformations, podInformation)
 	}
-
-	fmt.Printf("There are %d pods in the cluster\n", len(pods.Items))
-
 	return c.Render(http.StatusOK, r.JSON(podInformations))
 }
