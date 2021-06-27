@@ -80,13 +80,6 @@ func PodInfoHander(c buffalo.Context) error {
 		for i := 0; i < len(pods.Items); i++ {
 			for _, pod := range pods.Items {
 				podInformations.PodInformations[i].PodName = pods.Items[i].Name
-				podInformations.PodInformations[i].Namespace = pods.Items[i].Namespace
-				podInformations.PodInformations[i].StartTime = pods.Items[i].Status.StartTime.Time.String()
-				podInformations.PodInformations[i].VolumeName = pods.Items[i].Spec.Containers[i].VolumeMounts[i].Name
-				podInformations.PodInformations[i].VolumeMount = pods.Items[i].Spec.Containers[i].VolumeMounts[i].MountPath
-				podInformations.PodInformations[i].CPUUsage = podsMetricList.Items[i].Containers[i].Usage.Cpu().String()
-				podInformations.PodInformations[i].MemoryUsage = podsMetricList.Items[i].Containers[i].Usage.Memory().String()
-				podInformations.PodInformations[i].ConfigMapName = configMap.Items[i].Name
 
 				podStatus := pod.Spec.Containers
 				for _, spec := range podStatus {
@@ -126,8 +119,6 @@ func PodInfoHander(c buffalo.Context) error {
 		}
 
 		fmt.Printf("There are %d pods in the cluster\n", len(pods.Items))
-		c.Set("nodeName", nodes.Items[0].Name)
-		c.Set("nodeMemory", nodes.Items[0].Usage.Memory())
 		break
 	}
 
