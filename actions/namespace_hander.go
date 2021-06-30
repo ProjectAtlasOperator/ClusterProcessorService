@@ -10,7 +10,7 @@ import (
 	"k8s.io/client-go/rest"
 )
 
-type Namespace [10]struct {
+type Namespace struct {
 	Name string `json:"name"`
 }
 
@@ -24,18 +24,19 @@ func NamespaceHander(c buffalo.Context) error {
 	if err != nil {
 		panic(err.Error())
 	}
-
+	namespaceList := []Namespace{}
+	
 	namespaces, err := clientset.CoreV1().Namespaces().List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
 		panic(err.Error())
 	}
 
-	var ns Namespace
-
 	for i := 0; i < len(namespaces.Items); i++ {
-		ns[i].Name = namespaces.Items[i].Name
+		namespace := Namespace{}
+		namespace.Name = namespaces.Items[i].Name
+		namespaceList = append(namespaceList, namespace)
 	}
 
-	return c.Render(http.StatusOK, r.JSON(ns))
+	return c.Render(http.StatusOK, r.JSON(namespaceList))
 
 }
