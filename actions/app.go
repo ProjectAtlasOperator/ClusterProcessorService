@@ -34,12 +34,17 @@ var T *i18n.Translator
 // declared after it to never be called.
 func App() *buffalo.App {
 	if app == nil {
+		corsInstance := cors.New(cors.Options{
+			AllowedOrigins:   []string{envy.Get("ATLAS_DASHBOARD_DOMAIN", "http://localhost:8080")},
+			AllowCredentials: true,
+		})
+
 		app = buffalo.New(buffalo.Options{
 			Env:          ENV,
 			SessionStore: sessions.Null{},
 			SessionName:  "_cluster_processor_service_session",
 			PreWares: []buffalo.PreWare{
-				cors.Default().Handler,
+				corsInstance.Handler,
 			},
 		})
 
